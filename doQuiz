@@ -1,0 +1,187 @@
+#!/usr/local/bin/python3.5
+
+import fileinput
+import random
+import time
+
+optionLetters = list("ABCDEFGHIJKLMNOP")
+
+
+class Question:
+    def __init__(self, given, answer):
+        self.given = given
+        self.answer = answer
+        self.askedYet = False
+
+quizAnswers = [0, 0, 0, 0]
+
+
+class Quiz:
+    def __init__(self, questions):
+        self.right = 0
+        self.wrong = 0
+        self.place = 0
+        self.questions = questions
+        printD("Entered! quiz size = {}".format(len(self.questions)))
+        if(self.menu() == "1"):
+            self.askQuestion = self.askQuestionMC
+        else:
+            self.askQuestion = self.askQuestionFR
+
+    def menu(self):
+        printD("How would you like to be tested?")
+        printD("1. Multiple Choice")
+        printD("2. Free Response")
+        choices = list("12")
+        choice = input(">>>> ")
+        while(choice not in choices):
+            printD("Sorry that wasn't a valid option. Try again.")
+            choice = input(">>>> ")
+        return choice
+
+    def take(self):
+        random.shuffle(self.questions)
+        random.seed()
+        for question in self.questions:
+            if(self.askQuestion() == -1):
+                self.gradeQuiz()
+                return
+            time.sleep(0.5)
+            if(self.isFinished()):
+                self.gradeQuiz()
+                return
+            self.place += 1
+
+    def askQuestionMC(self):
+        question = self.questions[self.place]
+        options = []
+        optionIndices = []
+        optionIndices.append(self.place)
+        optionIndices.append(
+            getNewRandom(len(self.questions), exclude=optionIndices)
+            )
+        optionIndices.append(
+            getNewRandom(len(self.questions), exclude=optionIndices)
+            )
+        optionIndices.append(
+            getNewRandom(len(self.questions), exclude=optionIndices)
+            )
+        random.shuffle(optionIndices)
+        for index in optionIndices:
+            options.append(self.questions[index].answer)
+        random.shuffle(options)
+        printD("="*80)
+        time.sleep(0.1)
+        printD("GIVEN:")
+        printD(question.given)
+        printD("")
+        for n in range(len(options)):
+            if(question.answer == options[n]):
+                quizAnswers[n] += 1
+            printD("{}. {}".format(optionLetters[n], options[n]))
+        answer = input(">>>> ")
+        if(answer.upper() == "Q"):
+            self.gradeQuiz()
+            return -1
+        while(answer.upper() not in optionLetters[:len(options)]):
+            printD("Sorry... looks like that wasn't a valid option.")
+            printD("Try again:")
+            answer = input(">>>> ")
+            if(answer.upper() == "Q"):
+                self.gradeQuiz()
+                return -1
+        if(options[optionLetters.index(answer.upper())] == question.answer):
+            self.right += 1
+            printD(random.choice(correctMessages))
+        else:
+            self.wrong += 1
+            printD("Better luck next time!")
+            printD("Answer: {}".format(question.answer))
+
+    def askQuestionFR(self):
+        question = self.questions[self.place]
+        printD("GIVEN:")
+        printD(question.given)
+        printD("")
+        answer = input(">>>> ")
+        if(answer.upper() == "Q"):
+            self.gradeQuiz()
+            return -1
+        printD("ANSWER:")
+        printD(question.answer)
+        printD("Did you get that right? [y/n]")
+        correct = input(">>>> ")
+        if(correct.upper() == "Y"):
+            self.right += 1
+            printD(random.choice(correctMessages))
+        else:
+            self.wrong += 1
+            printD("Better luck next time!")
+        return
+
+
+
+    def isFinished(self):
+        if(self.place == len(self.questions) - 1):
+            return True
+        return False
+
+    def gradeQuiz(self):
+        totalCompleted = self.right + self.wrong
+        if totalCompleted == 0:
+            printD("You didn't do a single question")
+            return
+        printD("\n"*4)
+        percentCorrect = 100 * self.right / totalCompleted
+        printD("You got {}% correct.".format(percentCorrect))
+        printD("You finished {} out of {} total questions".format(totalCompleted, len(self.questions)))
+        for n in range(len(quizAnswers)):
+            print("{} of the answers were {}".format(quizAnswers[n], optionLetters[n]))
+
+
+correctMessages = [
+    "Good job!",
+    "That's right!",
+    "Fantastic!",
+    "You are smart. You are really really smart!",
+    "OMG You got it!",
+    "I am so proud of you right now",
+    "You are majestic.",
+    "Gozu!",
+    "Bruh., right on.",
+    ]
+
+
+def printD(message):
+    print(message)
+    time.sleep(0.1)
+
+
+def importContent():
+    quiz = []
+    given = ""
+    answer = ""
+
+    for line in fileinput.input():
+        if line[0] == "#":
+            if not answer.isspace() and not given.isspace() and answer != "":
+                quiz.append(Question(given=given, answer=answer))
+                answer = ""
+            given = line[2:]
+        elif not line.isspace():
+            answer += line
+        else:
+            pass
+    quiz.append(Question(given=given, answer=answer))
+    return quiz
+
+
+def getNewRandom(size, exclude=[]):
+    index = random.randint(0, size - 1)
+    while(index in exclude):
+        index = random.randint(0, size - 1)
+    return index
+
+
+quiz = Quiz(questions=importContent())
+quiz.take()
