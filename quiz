@@ -3,6 +3,11 @@
 import fileinput
 import random
 import time
+import os
+import sys
+from pickle import Pickler, Unpickler
+from question import Question
+from importContent import importContent
 
 optionLetters = list("ABCDEFGHIJKLMNOP")
 
@@ -23,7 +28,8 @@ class Quiz:
         self.place = 0
         self.questions = questions
         printD("Entered! quiz size = {}".format(len(self.questions)))
-        if(self.menu() == "1"):
+        menuOption = self.menu()
+        if(menuOption == '1'):
             self.askQuestion = self.askQuestionMC
         else:
             self.askQuestion = self.askQuestionFR
@@ -37,6 +43,26 @@ class Quiz:
         while(choice not in choices):
             printD("Sorry that wasn't a valid option. Try again.")
             choice = input(">>>> ")
+        printD("The quiz is currently {} questions long.".format(len(self.questions)))
+        printD("Would you like to limit its size?")
+        printD("[0] No limit (take the whole quiz)")
+        printD("[1] Limit to 10 questions")
+        printD("[2] Limit to 20 questions")
+        printD("[3] limit to weak questions")
+        choices = list("0123")
+        limitChoice = input(">>>> ")
+        while(choice not in choices):
+            printD("Sorry that wasn't a valid option. Try again.")
+            limitChoice = input(">>>> ")
+        self.questions.sort(key=lambda x: x.rating)
+        if limitChoice == '1' and len(self.questions) > 10:
+            self.questions = self.questions[:10]
+        elif limitChoice == '2' and len(self.questions) > 20:
+            self.questions = self.questions[:20]
+        elif limitChoice == '3':
+            for questions in self.questions:
+                if question.rating > 85:
+                    del question
         return choice
 
     def take(self):
@@ -46,10 +72,10 @@ class Quiz:
             if(self.askQuestion() == -1):
                 self.gradeQuiz()
                 return
-            time.sleep(0.5)
-            if(self.isFinished()):
+            elif(self.isFinished()):
                 self.gradeQuiz()
                 return
+            time.sleep(0.5)
             self.place += 1
 
     def askQuestionMC(self):
@@ -127,6 +153,14 @@ class Quiz:
         return False
 
     def gradeQuiz(self):
+        if os.stat(sys.argv[1] + ".mdq").st_size != 0:
+            readFile = open(sys.argv[1] + ".mdq", "rb")
+            oldQuestions = Unpickler(readFile).load();
+        for question in oldQuestions:
+            if question not in self.questions:
+                self.questions.append(question)
+        writeFile = open(sys.argv[1] + ".mdq", 'wb+')
+        Pickler(writeFile).dump(self.questions)
         totalCompleted = self.right + self.wrong
         if totalCompleted == 0:
             printD("You didn't do a single question")
@@ -137,6 +171,18 @@ class Quiz:
         printD("You finished {} out of {} total questions".format(totalCompleted, len(self.questions)))
         for n in range(len(quizAnswers)):
             print("{} of the answers were {}".format(quizAnswers[n], optionLetters[n]))
+        choices = list("01")
+        printD("Print out results?")
+        printD("[0] No")
+        printD("[1] Yes")
+        choice = input(">>>> ")
+        while(choice not in choices):
+            printD("Sorry that wasn't a valid option. Try again.")
+            choice = input(">>>> ")
+        if choice == '1':
+            for question in self.questions:
+                print("{} | overal rating: {}", question.given, question.rating)
+
 
 
 correctMessages = [
@@ -145,7 +191,7 @@ correctMessages = [
     "Fantastic!",
     "You are smart. You are really really smart!",
     "OMG You got it!",
-    "I am so proud of you right now",
+    "I am so proud of you right now.",
     "You are majestic.",
     "Gozu!",
     "Bruh., right on.",
@@ -157,31 +203,12 @@ def printD(message):
     time.sleep(0.1)
 
 
-def importContent():
-    quiz = []
-    given = ""
-    answer = ""
-
-    for line in fileinput.input():
-        if line[0] == "#":
-            if not answer.isspace() and not given.isspace() and answer != "":
-                quiz.append(Question(given=given, answer=answer))
-                answer = ""
-            given = line[2:]
-        elif not line.isspace():
-            answer += line
-        else:
-            pass
-    quiz.append(Question(given=given, answer=answer))
-    return quiz
-
-
 def getNewRandom(size, exclude=[]):
     index = random.randint(0, size - 1)
     while(index in exclude):
         index = random.randint(0, size - 1)
     return index
 
-
-quiz = Quiz(questions=importContent())
-quiz.take()
+if __name__ == "__main__":
+    quiz = Quiz(questions=importContent())
+    quiz.take()
