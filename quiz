@@ -8,15 +8,9 @@ import sys
 from pickle import Pickler, Unpickler
 from question import Question
 from importContent import importContent
+from correctMessages import correctMessages
 
 optionLetters = list("ABCDEFGHIJKLMNOP")
-
-
-class Question:
-    def __init__(self, given, answer):
-        self.given = given
-        self.answer = answer
-        self.askedYet = False
 
 quizAnswers = [0, 0, 0, 0]
 
@@ -29,16 +23,16 @@ class Quiz:
         self.questions = questions
         printD("Entered! quiz size = {}".format(len(self.questions)))
         menuOption = self.menu()
-        if(menuOption == '1'):
+        if(menuOption == '0'):
             self.askQuestion = self.askQuestionMC
         else:
             self.askQuestion = self.askQuestionFR
 
     def menu(self):
         printD("How would you like to be tested?")
-        printD("1. Multiple Choice")
-        printD("2. Free Response")
-        choices = list("12")
+        printD("[0] Multiple Choice")
+        printD("[1] Free Response")
+        choices = list("01")
         choice = input(">>>> ")
         while(choice not in choices):
             printD("Sorry that wasn't a valid option. Try again.")
@@ -118,9 +112,11 @@ class Quiz:
                 return -1
         if(options[optionLetters.index(answer.upper())] == question.answer):
             self.right += 1
+            self.questions[self.place].answered(True);
             printD(random.choice(correctMessages))
         else:
             self.wrong += 1
+            self.questions[self.place].answered(False);
             printD("Better luck next time!")
             printD("Answer: {}".format(question.answer))
 
@@ -153,13 +149,13 @@ class Quiz:
         return False
 
     def gradeQuiz(self):
-        if os.stat(sys.argv[1] + ".mdq").st_size != 0:
-            readFile = open(sys.argv[1] + ".mdq", "rb")
+        if os.stat("." + sys.argv[1] + ".mdq").st_size != 0:
+            readFile = open("." + sys.argv[1] + ".mdq", "rb")
             oldQuestions = Unpickler(readFile).load();
         for question in oldQuestions:
-            if question not in self.questions:
+            if question.given not in [x.given for x in self.questions]:
                 self.questions.append(question)
-        writeFile = open(sys.argv[1] + ".mdq", 'wb+')
+        writeFile = open("." + sys.argv[1] + ".mdq", 'wb+')
         Pickler(writeFile).dump(self.questions)
         totalCompleted = self.right + self.wrong
         if totalCompleted == 0:
@@ -181,21 +177,10 @@ class Quiz:
             choice = input(">>>> ")
         if choice == '1':
             for question in self.questions:
-                print("{} | overal rating: {}", question.given, question.rating)
+                print("{}\noveral rating: {}\n".format(question.given, question.rating))
 
 
 
-correctMessages = [
-    "Good job!",
-    "That's right!",
-    "Fantastic!",
-    "You are smart. You are really really smart!",
-    "OMG You got it!",
-    "I am so proud of you right now.",
-    "You are majestic.",
-    "Gozu!",
-    "Bruh., right on.",
-    ]
 
 
 def printD(message):

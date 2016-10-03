@@ -6,8 +6,8 @@ import sys
 from question import Question
 
 def importContent():
-    if sys.argv[1] + ".mdq" in os.listdir() and os.stat(sys.argv[1] + ".mdq").st_size != 0:
-        readFile = open(sys.argv[1] + ".mdq", 'rb')
+    if "." + sys.argv[1] + ".mdq" in os.listdir() and os.stat("." + sys.argv[1] + ".mdq").st_size != 0:
+        readFile = open("." + sys.argv[1] + ".mdq", 'rb')
         return Unpickler(readFile).load();
     questions = []
     given = ""
@@ -16,7 +16,7 @@ def importContent():
     for line in fileinput.input():
         if line[0] == "#":
             if not answer.isspace() and not given.isspace() and answer != "":
-                questions.append(Question(given=given, answer=answer))
+                questions.append(Question(given=given.rstrip(), answer=answer.rstrip()))
                 answer = ""
             given = line[2:]
         elif not line.isspace():
@@ -24,6 +24,6 @@ def importContent():
         else:
             pass
     questions.append(Question(given=given, answer=answer))
-    writeFile = open(sys.argv[1] + ".mdq", 'wb+')
+    writeFile = open("." + sys.argv[1] + ".mdq", 'wb+')
     Pickler(writeFile).dump(questions)
     return questions
