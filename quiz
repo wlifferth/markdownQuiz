@@ -45,7 +45,7 @@ class Quiz:
         printD("[3] limit to weak questions")
         choices = list("0123")
         limitChoice = input(">>>> ")
-        while(choice not in choices):
+        while(limitChoice not in choices):
             printD("Sorry that wasn't a valid option. Try again.")
             limitChoice = input(">>>> ")
         self.questions.sort(key=lambda x: x.rating)
